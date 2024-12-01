@@ -1,0 +1,211 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
+#include <algorithm>
+
+using namespace std;
+struct BookNode {
+    string title;
+    string author;
+    int publicationYear;
+    double rating;
+    shared_ptr<BookNode> next;
+
+    BookNode(const string& t, const string& a, int year, double r)
+        : title(t), author(a), publicationYear(year), rating(r), next(nullptr) {}
+};
+
+// Custom Heap-based Book Priority Queue
+class BookPriorityQueue 
+{
+private:
+   vector<shared_ptr<BookNode>> heap;
+
+    // Helper function to maintain heap property
+    void heapifyUp(int index) {
+        while (index > 0) {
+            int parentIndex = (index - 1) / 2;
+            if (heap[index]->rating > heap[parentIndex]->rating) {
+                swap(heap[index], heap[parentIndex]);
+                index = parentIndex;
+            } 
+            else 
+            {
+                break;
+            }
+        }
+    }
+
+    void heapifyDown(int index) {
+        int size = heap.size();
+        while (true) {
+            int largest = index;
+            int left = 2 * index + 1;
+            int right = 2 * index + 2;
+
+            if (left < size && heap[left]->rating > heap[largest]->rating)
+                largest = left;
+
+            if (right < size && heap[right]->rating > heap[largest]->rating)
+                largest = right;
+
+            if (largest != index) {
+              swap(heap[index], heap[largest]);
+                index = largest;
+            } else {
+                break;
+            }
+        }
+    }
+
+public:
+    // Binary Search Tree (BST) for efficient book searching
+    class BookSearchTree {
+    private:
+        struct TreeNode {
+           shared_ptr<BookNode> book;
+           shared_ptr<TreeNode> left;
+          shared_ptr<TreeNode> right;
+
+            TreeNode(shared_ptr<BookNode> b) : book(b), left(nullptr), right(nullptr) {}
+        };
+
+        shared_ptr<TreeNode> root;
+
+        shared_ptr<TreeNode> insertRecursive(shared_ptr<TreeNode> node, shared_ptr<BookNode> book) {
+            if (!node) {
+                return make_shared<TreeNode>(book);
+            }
+
+            // Insert based on publication year
+            if (book->publicationYear < node->book->publicationYear) {
+                node->left = insertRecursive(node->left, book);
+            } else {
+                node->right = insertRecursive(node->right, book);
+            }
+
+            return node;
+        }
+
+        void inorderTraversalRecursive(shared_ptr<TreeNode> node) {
+            if (!node) return;
+
+            inorderTraversalRecursive(node->left);
+            cout << "Title: " << node->book->title 
+                      << ", Year: " << node->book->publicationYear 
+                      << ", Rating: " << node->book->rating << endl;
+            inorderTraversalRecursive(node->right);
+        }
+
+    public:
+        void insert(shared_ptr<BookNode> book) {
+            root = insertRecursive(root, book);
+        }
+
+        void displayBooks() {
+           cout << "Books sorted by publication year:\n";
+            inorderTraversalRecursive(root);
+        }
+    };
+
+    // Add book to priority queue (heap)
+    void addBook(shared_ptr<BookNode> book) {
+        heap.push_back(book);
+        heapifyUp(heap.size() - 1);
+    }
+
+    // Get top-rated book
+    shared_ptr<BookNode> getTopRatedBook() {
+        if (heap.empty()) return nullptr;
+
+       shared_ptr<BookNode> topBook = heap[0];
+        
+        // Replace root with last element
+        heap[0] = heap.back();
+        heap.pop_back();
+
+        if (!heap.empty()) {
+            heapifyDown(0);
+        }
+
+        return topBook;
+    }
+
+    // Linked List Operations
+    class BookLinkedList {
+    private:
+        shared_ptr<BookNode> head;
+
+    public:
+        void addBook(shared_ptr<BookNode> book) {
+            if (!head) {
+                head = book;
+                return;
+            }
+
+            // Add to end of list
+            auto current = head;
+            while (current->next) {
+                current = current->next;
+            }
+            current->next = book;
+        }
+
+        void displayBooks() {
+            auto current = head;
+            cout << "All Books in Library:\n";
+            while (current) {
+                cout << "Title: " << current->title 
+                          << ", Author: " << current->author 
+                          << ", Year: " << current->publicationYear << endl;
+                current = current->next;
+            }
+        }
+    };
+
+    // Demonstrate all data structures
+    void demonstrateLibrarySystem() {
+        BookPriorityQueue priorityQueue;
+        BookSearchTree searchTree;
+        BookLinkedList linkedList;
+
+        // Add some sample books
+        auto book1 = make_shared<BookNode>("1984", "George Orwell", 1949, 4.5);
+        auto book2 = make_shared<BookNode>("To Kill a Mockingbird", "Harper Lee", 1960, 4.7);
+        auto book3 = make_shared<BookNode>("The Great Gatsby", "F. Scott Fitzgerald", 1925, 4.3);
+
+        // Add to different data structures
+        priorityQueue.addBook(book1);
+        priorityQueue.addBook(book2);
+        priorityQueue.addBook(book3);
+
+        searchTree.insert(book1);
+        searchTree.insert(book2);
+        searchTree.insert(book3);
+
+        linkedList.addBook(book1);
+        linkedList.addBook(book2);
+        linkedList.addBook(book3);
+
+        // Demonstrate operations
+        cout << "Top Rated Book:\n";
+        auto topBook = priorityQueue.getTopRatedBook();
+        if (topBook) {
+            cout << "Title: " << topBook->title 
+                      << ", Rating: " << topBook->rating << endl;
+        }
+
+        cout << "\nBooks by Publication Year:\n";
+        searchTree.displayBooks();
+
+        cout << "\nAll Books in Library:\n";
+        linkedList.displayBooks();
+    }
+};
+
+int main() {
+    BookPriorityQueue librarySystem;
+    librarySystem.demonstrateLibrarySystem();
+    return 0;
+}
